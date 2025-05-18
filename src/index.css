@@ -1,0 +1,27 @@
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+}
+
+.welcome-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #000;
+  -webkit-text-stroke: 2px #fff;
+  text-stroke: 2px #fff;
+  font-weight: bold;
+  font-size: 3vw;
+  text-align: center;
+  z-index: 1000;
+  opacity: 1;
+  transition: opacity 1s linear;
+  pointer-events: none;
+}
+
+.welcome-overlay[style*="display: none"] {
+  opacity: 0;
+}
