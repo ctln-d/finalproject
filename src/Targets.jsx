@@ -13,13 +13,13 @@ function randomPoint(scale) {
 }
 
 const TARGET_RAD = 0.125;
-const PLANE_COLLISION_RAD = 0.2; // Added plane collision radius
+const PLANE_COLLISION_RAD = 0.2;
 const POINTS_PER_TARGET = 10;
-const RESPAWN_TIME = 60000; // 60 seconds in milliseconds
-const TARGET_COUNT = 25;
+const RESPAWN_TIME = 60000;
+const TARGET_COUNT = 15;
 
-// Create a single torus geometry to be reused
-const baseTorusGeometry = new TorusGeometry(TARGET_RAD, 0.02, 8, 25);
+// Create a single torus geometry with minimal segments for better performance
+const baseTorusGeometry = new TorusGeometry(TARGET_RAD, 0.02, 4, 12);
 
 export function Targets({ onScoreUpdate }) {
   const [targets, setTargets] = useState(() => {
@@ -32,8 +32,8 @@ export function Targets({ onScoreUpdate }) {
       arr.push({
         center,
         direction,
-        originalCenter: center.clone(), // Store original position
-        originalDirection: direction.clone(), // Store original direction
+        originalCenter: center.clone(),
+        originalDirection: direction.clone(),
         hit: false,
         hitTime: null
       });
@@ -41,7 +41,7 @@ export function Targets({ onScoreUpdate }) {
     return arr;
   });
 
-  // Optimize target respawning
+  // Optimize target respawning with a more efficient interval
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -54,8 +54,8 @@ export function Targets({ onScoreUpdate }) {
             ...target,
             hit: false,
             hitTime: null,
-            center: target.originalCenter.clone(), // Use original position
-            direction: target.originalDirection.clone() // Use original direction
+            center: target.originalCenter.clone(),
+            direction: target.originalDirection.clone()
           };
         }
         return target;
@@ -64,12 +64,12 @@ export function Targets({ onScoreUpdate }) {
       if (needsUpdate) {
         setTargets(newTargets);
       }
-    }, 1000); // Check every second
+    }, 2000); // Check every 2 seconds instead of every second
 
     return () => clearInterval(interval);
   }, [targets]);
 
-  // Optimize geometry creation
+  // Optimize geometry creation with reduced complexity
   const geometry = useMemo(() => {
     const positions = [];
     const normals = [];
@@ -83,12 +83,10 @@ export function Targets({ onScoreUpdate }) {
           target.direction
         );
 
-        // Get geometry attributes
         const posAttr = baseTorusGeometry.getAttribute('position');
         const normalAttr = baseTorusGeometry.getAttribute('normal');
         const indexAttr = baseTorusGeometry.getIndex();
 
-        // Transform and add vertices
         for (let i = 0; i < posAttr.count; i++) {
           const vertex = new Vector3();
           vertex.fromBufferAttribute(posAttr, i);
@@ -102,7 +100,6 @@ export function Targets({ onScoreUpdate }) {
           normals.push(normal.x, normal.y, normal.z);
         }
 
-        // Add indices
         for (let i = 0; i < indexAttr.count; i++) {
           indices.push(indexAttr.getX(i) + indexOffset);
         }
@@ -118,7 +115,7 @@ export function Targets({ onScoreUpdate }) {
     return geometry;
   }, [targets]);
 
-  // Optimize collision detection
+  // Optimize collision detection with simpler checks
   const checkCollision = useCallback((target) => {
     if (target.hit) return false;
 
@@ -130,18 +127,26 @@ export function Targets({ onScoreUpdate }) {
     return hitDist < TARGET_RAD + PLANE_COLLISION_RAD;
   }, []);
 
+  // Optimize frame updates with batched processing
   useFrame(() => {
     let newScore = 0;
     let needsUpdate = false;
+    let hitCount = 0;
 
-    targets.forEach((target, i) => {
-      if (checkCollision(target)) {
-        target.hit = true;
-        target.hitTime = Date.now();
-        newScore += POINTS_PER_TARGET;
-        needsUpdate = true;
+    // Process targets in batches of 5 for better performance
+    for (let i = 0; i < targets.length; i += 5) {
+      const batchEnd = Math.min(i + 5, targets.length);
+      for (let j = i; j < batchEnd; j++) {
+        const target = targets[j];
+        if (checkCollision(target)) {
+          target.hit = true;
+          target.hitTime = Date.now();
+          newScore += POINTS_PER_TARGET;
+          needsUpdate = true;
+          hitCount++;
+        }
       }
-    });
+    }
 
     if (newScore > 0) {
       onScoreUpdate(newScore);

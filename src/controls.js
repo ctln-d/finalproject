@@ -30,36 +30,52 @@ const WORLD_BOUNDS = {
 // Create raycaster for collision detection
 const raycaster = new Raycaster();
 const collisionDistance = 0.5; // Distance to check for collisions
-const COLLISION_PENALTY = 10; // Renamed from GROUND_COLLISION_PENALTY
+const COLLISION_PENALTY = 10;
 
-// Collision detection function
+// Optimize collision detection function
 function checkCollision(newPosition, direction) {
-  // Check world boundaries
+  // Check world boundaries first (fast check)
   if (newPosition.x < WORLD_BOUNDS.x.min || newPosition.x > WORLD_BOUNDS.x.max ||
       newPosition.y < WORLD_BOUNDS.y.min || newPosition.y > WORLD_BOUNDS.y.max ||
       newPosition.z < WORLD_BOUNDS.z.min || newPosition.z > WORLD_BOUNDS.z.max) {
     return { collision: true };
   }
 
-  // Check collisions with landscape and trees
+  // Only check landscape collisions if we're within the boundary area
   if (landscapeRef.current && treesRef.current) {
-    // Cast rays in multiple directions to detect nearby objects
-    const directions = [
-      direction.clone(), // Forward
-      direction.clone().applyAxisAngle(new Vector3(0, 1, 0), Math.PI / 4), // Forward-right
-      direction.clone().applyAxisAngle(new Vector3(0, 1, 0), -Math.PI / 4), // Forward-left
-      direction.clone().applyAxisAngle(new Vector3(1, 0, 0), Math.PI / 4), // Forward-up
-      direction.clone().applyAxisAngle(new Vector3(1, 0, 0), -Math.PI / 4), // Forward-down
-    ];
+    // Optimize raycast parameters for close-range detection
+    raycaster.firstHitOnly = true;
+    raycaster.near = 0;
+    raycaster.far = collisionDistance;
 
-    for (const dir of directions) {
-      raycaster.set(newPosition, dir);
-      const landscapeIntersects = raycaster.intersectObject(landscapeRef.current, true);
-      const treesIntersects = raycaster.intersectObject(treesRef.current, true);
+    // Use a single forward ray for most cases
+    raycaster.set(newPosition, direction);
+    
+    // Check landscape first (usually more important)
+    const landscapeIntersects = raycaster.intersectObject(landscapeRef.current, false);
+    if (landscapeIntersects.length > 0) {
+      return { collision: true };
+    }
 
-      if ((landscapeIntersects.length > 0 && landscapeIntersects[0].distance < collisionDistance) ||
-          (treesIntersects.length > 0 && treesIntersects[0].distance < collisionDistance)) {
-        return { collision: true };
+    // Only check trees if no landscape collision
+    const treesIntersects = raycaster.intersectObject(treesRef.current, false);
+    if (treesIntersects.length > 0) {
+      return { collision: true };
+    }
+
+    // Only do additional raycasts if we're moving fast (turbo)
+    if (turbo > 0.5) {
+      const sideDirections = [
+        direction.clone().applyAxisAngle(new Vector3(0, 1, 0), Math.PI / 3),
+        direction.clone().applyAxisAngle(new Vector3(0, 1, 0), -Math.PI / 3),
+      ];
+
+      for (const dir of sideDirections) {
+        raycaster.set(newPosition, dir);
+        const landscapeIntersects = raycaster.intersectObject(landscapeRef.current, false);
+        if (landscapeIntersects.length > 0) {
+          return { collision: true };
+        }
       }
     }
   }
@@ -78,6 +94,7 @@ function resetPlane(x, y, z, planePosition) {
   planePosition.set(0, 3, 7);
 }
 
+// Optimize plane movement
 export function updatePlaneAxis(x, y, z, planePosition, camera) {
   jawVelocity *= 0.95;
   pitchVelocity *= 0.95;
@@ -118,18 +135,20 @@ export function updatePlaneAxis(x, y, z, planePosition, camera) {
   y.normalize();
   z.normalize();
 
-  // plane position & velocity
+  // Optimize turbo calculation
   if (controls.shift) {
-    turbo += 0.025;
+    turbo = Math.min(turbo + 0.025, 1);
   } else {
     turbo *= 0.95;
   }
-  turbo = Math.min(Math.max(turbo, 0), 1);
 
   let turboSpeed = easeOutQuad(turbo) * 0.02;
 
-  camera.fov = 45 + turboSpeed * 900;
-  camera.updateProjectionMatrix();
+  // Optimize camera FOV update
+  if (turbo > 0.1) {
+    camera.fov = 45 + turboSpeed * 900;
+    camera.updateProjectionMatrix();
+  }
 
   // Calculate new position
   const newPosition = planePosition.clone().add(z.clone().multiplyScalar(-planeSpeed - turboSpeed));

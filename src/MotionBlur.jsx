@@ -22,14 +22,14 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   positionalStrength = pow(positionalStrength, 1.5) * 7.0;
 
   vec4 accum = vec4(0.0);
-  for (int i = 0; i < 7; i++) {
+  for (int i = 0; i < 4; i++) {
     vec2 offs1 = -dir * positionalStrength * strength * ((float(i) + rand2(uv * 5.0)) * 0.2);
     vec2 offs2 = dir * positionalStrength * strength * ((float(i) + rand2(uv * 5.0)) * 0.2);
 
     accum += texture2D(inputBuffer, uv + offs1);
     accum += texture2D(inputBuffer, uv + offs2);
   }
-  accum *= 1.0 / 14.0;
+  accum *= 1.0 / 8.0;
 
 	outputColor = accum;
 }`

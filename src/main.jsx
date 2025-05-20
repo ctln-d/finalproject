@@ -67,14 +67,14 @@ function Game() {
         shadows
         gl={{
           outputColorSpace: 'srgb',
-          antialias: true,
+          antialias: false,
           powerPreference: 'high-performance',
           alpha: false,
           stencil: false,
           depth: true,
-          precision: 'mediump'
+          precision: 'lowp'
         }}
-        dpr={[1, 2]}
+        dpr={[0.5, 1]}
       >
         <Suspense fallback={null}>
           <App onScoreUpdate={handleScoreUpdate} onLoad={() => setIsLoading(false)} />

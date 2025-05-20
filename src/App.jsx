@@ -38,11 +38,11 @@ function App({ onScoreUpdate, onLoad }) {
       <directionalLight
         castShadow
         color={"#f3d29a"}
-        intensity={2}
+        intensity={1.5}
         position={[10, 5, 4]}
         shadow-bias={-0.0005}
-        shadow-mapSize-width={512}
-        shadow-mapSize-height={512}
+        shadow-mapSize-width={128}
+        shadow-mapSize-height={128}
         shadow-camera-near={0.01}
         shadow-camera-far={20}
         shadow-camera-top={6}
@@ -54,9 +54,9 @@ function App({ onScoreUpdate, onLoad }) {
       <EffectComposer enabled={true} multisampling={0}>
         <MotionBlur />
         <HueSaturation
-          blendFunction={BlendFunction.NORMAL} // blend mode
-          hue={-0.15} // hue in radians
-          saturation={0.1} // saturation in radians
+          blendFunction={BlendFunction.NORMAL}
+          hue={-0.1}
+          saturation={0.05}
         />
       </EffectComposer>
     </>
