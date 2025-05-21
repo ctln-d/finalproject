@@ -7,6 +7,7 @@ import { SphereEnv } from "./SphereEnv";
 import { Airplane } from "./Airplane";
 import { Targets } from "./Targets";
 import { MotionBlur } from "./MotionBlur";
+import { Bullets } from "./Bullets";
 
 function App({ onScoreUpdate, onLoad }) {
   useEffect(() => {
@@ -34,6 +35,8 @@ function App({ onScoreUpdate, onLoad }) {
       <Suspense fallback={null}>
         <Targets onScoreUpdate={onScoreUpdate} />
       </Suspense>
+
+      <Bullets />
 
       <directionalLight
         castShadow

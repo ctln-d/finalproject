@@ -1,5 +1,6 @@
 import { landscapeRef, treesRef } from './Landscape';
 import { Raycaster, Vector3 } from 'three';
+import { shootBullet } from './Bullets';
 
 function easeOutQuad(x) {
   return 1 - (1 - x) * (1 - x);
@@ -123,6 +124,11 @@ export function updatePlaneAxis(x, y, z, planePosition, camera) {
 
   if (controls["r"]) {
     resetPlane(x, y, z, planePosition);
+  }
+
+  // Handle shooting
+  if (controls[" "]) { // Space bar
+    shootBullet(z);
   }
 
   x.applyAxisAngle(z, jawVelocity);
